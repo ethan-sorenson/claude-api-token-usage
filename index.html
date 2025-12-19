@@ -626,7 +626,7 @@
 
         function checkProtocol() {
             if (window.location.protocol === 'file:') {
-                showError('⚠️ WARNING: This page is opened as a local file. API calls will fail due to CORS. Please run a local web server: "python -m http.server 8000" then open http://localhost:8000/claude-api-demo.html', true);
+                showError('⚠️ WARNING: This page is opened as a local file. API calls will fail due to CORS. Please run a local web server: "python -m http.server 8000" then open http://localhost:8000/index.html', true);
             }
         }
 
@@ -768,7 +768,8 @@
 
                 if (!response.ok) {
                     const error = await response.json();
-                    throw new Error(error.error?.message || 'API request failed');
+                    console.error('API Response Error:', error);
+                    throw new Error(error.error?.message || `API request failed with status ${response.status}`);
                 }
 
                 const data = await response.json();
@@ -818,9 +819,11 @@
             } catch (error) {
                 removeLoadingMessage(loadingId);
                 
-                // Check if it's a CORS/network error
-                if (error.message === 'Failed to fetch' || error.name === 'TypeError') {
-                    showError(`Network Error: This demo must be run from a web server, not opened directly as a file. See instructions at the top of the HTML file. Quick fix: Run "python -m http.server 8000" in the file's directory, then open http://localhost:8000/claude-api-demo.html`);
+                // Provide helpful error message based on error type
+                if (error.message.includes('API key')) {
+                    showError(`Error: ${error.message}`);
+                } else if (error.message === 'Failed to fetch') {
+                    showError(`Network Error: Unable to reach Anthropic API. Check your internet connection and API key. If the problem persists, check browser console for details.`);
                 } else {
                     showError(`Error: ${error.message}`);
                 }
