@@ -1218,31 +1218,7 @@
             let firstTokenMs = null;
             let deltaCount = 0;
             let sseLogVisible = false;
-
-            // ── Initialise the two-zone layout inside the loading bubble ────────
-            // We split the bubble into a crumbs zone (updated by renderCrumbs) and
-            // a controls zone holding the toggle button + scrollable log panel.
-            // This prevents renderCrumbs from overwriting the log panel.
-            (function initPanel() {
-                const el = document.getElementById(loadingId);
-                if (!el) return;
-                el.querySelector('.message-content').innerHTML = `
-                    <div class="sse-crumbs-area"><span class="loading"></span> Thinking...</div>
-                    <div class="sse-controls-area">
-                        <button class="sse-log-toggle" id="${loadingId}-sse-btn">📡 Events</button>
-                        <div class="sse-log-panel" id="${loadingId}-sse-panel" style="display:none;"></div>
-                    </div>`;
-                document.getElementById(`${loadingId}-sse-btn`).onclick = () => {
-                    sseLogVisible = !sseLogVisible;
-                    const panel = document.getElementById(`${loadingId}-sse-panel`);
-                    const btn   = document.getElementById(`${loadingId}-sse-btn`);
-                    if (!panel || !btn) return;
-                    panel.style.display = sseLogVisible ? 'block' : 'none';
-                    btn.classList.toggle('active', sseLogVisible);
-                    btn.textContent = sseLogVisible ? '📡 Events ▲' : '📡 Events';
-                    if (sseLogVisible) panel.scrollTop = panel.scrollHeight;
-                };
-            })();
+            let sseReady = false; // true once initPanel succeeds
 
             function addBreadcrumb(text) {
                 // Avoid consecutive duplicates
@@ -1251,11 +1227,11 @@
                 renderCrumbs();
             }
 
-            // Targets .sse-crumbs-area only, so the controls zone is never stomped
+            // Targets .sse-crumbs-area if it exists, falls back to .message-content
             function renderCrumbs() {
                 const el = document.getElementById(loadingId);
                 if (!el) return;
-                const area = el.querySelector('.sse-crumbs-area');
+                const area = el.querySelector('.sse-crumbs-area') || el.querySelector('.message-content');
                 if (!area) return;
                 const parts = crumbs.map((text, i) => {
                     const isLast = i === crumbs.length - 1;
@@ -1269,19 +1245,50 @@
                 if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
             }
 
-            // Append one row to the live panel (O(1) per event — no full re-render)
+            // Append one row to the live panel — non-fatal, never interrupts the stream
             function appendEventRow(entry) {
-                const panel = document.getElementById(`${loadingId}-sse-panel`);
-                if (!panel) return;
-                const row = document.createElement('div');
-                row.className = `sse-row sse-type-${entry.type.replace(/_/g, '-')}`;
-                row.innerHTML = buildEventRowHtml(entry);
-                panel.appendChild(row);
-                // Auto-scroll only while the panel is open
-                if (panel.style.display !== 'none') panel.scrollTop = panel.scrollHeight;
+                if (!sseReady) return;
+                try {
+                    const panel = document.getElementById(`${loadingId}-sse-panel`);
+                    if (!panel) return;
+                    const row = document.createElement('div');
+                    row.className = `sse-row sse-type-${entry.type.replace(/_/g, '-')}`;
+                    row.innerHTML = buildEventRowHtml(entry);
+                    panel.appendChild(row);
+                    if (panel.style.display !== 'none') panel.scrollTop = panel.scrollHeight;
+                } catch (e) { /* non-fatal — UI log failures must never kill the stream */ }
             }
 
             try {
+                // ── Initialise the two-zone layout in the loading bubble ─────────
+                // Runs inside try so finally always cleans up.  Wrapped in its own
+                // try/catch so a DOM error here is non-fatal and the stream still runs.
+                try {
+                    const el = document.getElementById(loadingId);
+                    if (el) {
+                        el.querySelector('.message-content').innerHTML = `
+                            <div class="sse-crumbs-area"><span class="loading"></span> Thinking...</div>
+                            <div class="sse-controls-area">
+                                <button class="sse-log-toggle" id="${loadingId}-sse-btn">📡 Events</button>
+                                <div class="sse-log-panel" id="${loadingId}-sse-panel" style="display:none;"></div>
+                            </div>`;
+                        const btn = document.getElementById(`${loadingId}-sse-btn`);
+                        if (btn) {
+                            btn.onclick = () => {
+                                sseLogVisible = !sseLogVisible;
+                                const panel = document.getElementById(`${loadingId}-sse-panel`);
+                                const b     = document.getElementById(`${loadingId}-sse-btn`);
+                                if (!panel || !b) return;
+                                panel.style.display = sseLogVisible ? 'block' : 'none';
+                                b.classList.toggle('active', sseLogVisible);
+                                b.textContent = sseLogVisible ? '📡 Events \u25b2' : '📡 Events';
+                                if (sseLogVisible) panel.scrollTop = panel.scrollHeight;
+                            };
+                            sseReady = true;
+                        }
+                    }
+                } catch (e) { console.warn('SSE panel init failed (non-fatal):', e); }
+
                 while (true) {
                     const { done, value } = await reader.read();
                     if (done) break;
@@ -1311,7 +1318,7 @@
                             finalResult = event;
                         }
 
-                        // Record and render every event (including stream_end)
+                        // Record and render — appendEventRow is non-fatal
                         const entry = { ms: Date.now() - streamStartTime, type: event.type, event, isTTFT };
                         eventLog.push(entry);
                         appendEventRow(entry);
