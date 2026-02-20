@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Clients - MCP Chat</title>
+    <link rel="icon" type="image/png" sizes="16x16" href="https://login.popdock.com/favicon-16x16.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/main.css">
+    <link rel="stylesheet" href="/static/css/nav.css">
+    <link rel="stylesheet" href="/static/css/connections.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+    <style>
+        .EasyMDEContainer .CodeMirror { min-height: 100px; max-height: 220px; font-size: 13px; font-family: inherit; }
+        .EasyMDEContainer .editor-toolbar { font-size: 13px; }
+        .EasyMDEContainer .editor-preview { font-size: 13px; }
+    </style>
+</head>
+<body>
+    <!-- Nav Drawer -->
+    <div class="nav-overlay" id="navOverlay" onclick="toggleNavMenu()"></div>
+    <nav class="nav-drawer" id="navDrawer">
+        <div class="nav-drawer-header">
+            <span class="app-icon">🤖</span>
+            <h2>MCP Chat</h2>
+        </div>
+        <div class="nav-section">
+            <div class="nav-section-label">Configuration</div>
+            <a class="nav-item active" href="/tokens">
+                <span class="nav-icon">🔑</span>
+                <span class="nav-label">AI Clients</span>
+            </a>
+            <a class="nav-item" href="/connections">
+                <span class="nav-icon">🔌</span>
+                <span class="nav-label">Connections</span>
+            </a>
+        </div>
+        <div class="nav-divider"></div>
+        <div class="nav-section">
+            <div class="nav-section-label">Chats</div>
+            <a class="nav-item" href="/">
+                <span class="nav-icon">💬</span>
+                <span class="nav-label">Single Chat</span>
+            </a>
+            <a class="nav-item" href="/compare.html">
+                <span class="nav-icon">🔀</span>
+                <span class="nav-label">Comparison Chat</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button class="nav-menu-trigger" id="navMenuTrigger" onclick="toggleNavMenu()" title="Menu">
+                        <span class="bar"></span>
+                        <span class="bar"></span>
+                        <span class="bar"></span>
+                    </button>
+                    <h1 style="margin-bottom: 0;">🔑 AI Clients</h1>
+                </div>
+                <p class="page-subtitle">Manage API keys for AI language models. These clients are available for selection in the chat interfaces.</p>
+            </div>
+        </div>
+
+        <div class="page-content">
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <button class="btn btn-primary" onclick="showAddTokenDialog()">
+                        ➕ Add New Token
+                    </button>
+                </div>
+                <div class="toolbar-right">
+                    <div id="tokenStatus" class="status-indicator status-disconnected">
+                        <span>●</span> No tokens configured
+                    </div>
+                </div>
+            </div>
+
+            <div id="errorContainer" style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px;"></div>
+
+            <div class="connections-split">
+                <div class="connections-list-panel">
+                    <div id="tokensList" class="server-list"></div>
+                </div>
+                <div class="connections-detail-panel" id="tokenDetailPanel">
+                    <div class="detail-empty">
+                        <div class="detail-empty-icon">🔑</div>
+                        <p>Select a token from the list to view its configuration</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Token Modal -->
+    <div id="tokenModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow: auto;">
+        <div style="background: white; margin: 80px auto; max-width: 550px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
+            <div style="padding: 20px 24px; border-bottom: 1px solid #E2E2E4; display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; font-size: 20px;" id="tokenModalTitle">Add New Token</h2>
+                <button onclick="closeTokenModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #929395;">&times;</button>
+            </div>
+            <div style="padding: 24px;">
+                <form id="tokenForm" onsubmit="saveToken(event)">
+                    <input type="hidden" id="tokenEditId" value="">
+                    <div style="margin-bottom: 16px;">
+                        <label class="config-label" style="font-size: 13px; font-weight: 600; color: #767676;">Display Name *</label>
+                        <input type="text" id="tokenName" class="config-input" placeholder="e.g., Anthropic Production, OpenAI Dev" required
+                               style="padding: 10px; font-size: 14px;">
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <label class="config-label" style="font-size: 13px; font-weight: 600; color: #767676;">Provider *</label>
+                        <select id="tokenProvider" class="config-input" required style="padding: 10px; font-size: 14px;">
+                            <option value="">Select provider...</option>
+                            <option value="anthropic">Anthropic (Claude)</option>
+                            <option value="openai">OpenAI (GPT)</option>
+                            <option value="google">Google (Gemini)</option>
+                            <option value="mistral">Mistral</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <label class="config-label" style="font-size: 13px; font-weight: 600; color: #767676;">API Key *</label>
+                        <input type="password" id="tokenKey" class="config-input" placeholder="sk-ant-..." required
+                               style="padding: 10px; font-size: 14px;">
+                        <div style="font-size: 11px; color: #929395; margin-top: 4px;">Your key is stored securely in the database</div>
+                    </div>
+                    <div style="margin-bottom: 16px;">
+                        <label class="config-label" style="font-size: 13px; font-weight: 600; color: #767676;">Notes</label>
+                        <input type="text" id="tokenNotes" class="config-input" placeholder="Optional notes about this token..."
+                               style="padding: 10px; font-size: 14px;">
+                    </div>
+                    <div style="margin-bottom: 24px;">
+                        <label class="config-label" style="font-size: 13px; font-weight: 600; color: #767676;">System Prompt (Baseline)</label>
+                        <textarea id="tokenSystemPrompt" class="config-input" rows="4"
+                                  placeholder="Optional instructions sent with every message (e.g. 'You are a helpful ERP assistant. Always respond concisely.')..."
+                                  style="padding: 10px; font-size: 13px; resize: vertical; line-height: 1.5;"></textarea>
+                        <div style="font-size: 11px; color: #929395; margin-top: 4px;">Applied automatically on every request. Supported by Anthropic, OpenAI, Mistral, and Google.</div>
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        <button type="button" onclick="closeTokenModal()" class="btn btn-secondary" style="flex: 1; padding: 12px;">Cancel</button>
+                        <button type="submit" class="btn btn-primary" style="flex: 1; padding: 12px;">Save Token</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/shared.js"></script>
+    <script src="/static/js/tokens.js"></script>
+</body>
+</html>

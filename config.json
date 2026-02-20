@@ -1,0 +1,175 @@
+{
+  "mcp_auth_types": [
+    {
+      "name": "No Auth",
+      "type": "none",
+      "user_inputs": []
+    },
+    {
+      "name": "URL Token",
+      "type": "url_token",
+      "location": "query",
+      "token_param_name": "token",
+      "user_inputs": [
+        {
+          "field": "token",
+          "label": "API Token",
+          "type": "password",
+          "required": true,
+          "placeholder": "Enter your API token",
+          "help_text": "Find this in your account settings"
+        },
+        {
+          "field": "token_param_name",
+          "label": "Query Parameter Name",
+          "type": "text",
+          "required": false,
+          "default": "token",
+          "placeholder": "token",
+          "help_text": "Name of the query parameter (default: token)"
+        }
+      ]
+    },
+    {
+      "name": "API Key (Header)",
+      "type": "api_key",
+      "location": "header",
+      "user_inputs": [
+        {
+          "field": "api_key",
+          "label": "API Key",
+          "type": "password",
+          "required": true,
+          "placeholder": "Enter your API key"
+        },
+        {
+          "field": "header_name",
+          "label": "Header Name",
+          "type": "text",
+          "required": false,
+          "default": "X-API-Key",
+          "placeholder": "X-API-Key",
+          "help_text": "Custom header name (default: X-API-Key)"
+        }
+      ]
+    },
+    {
+      "name": "Bearer Token",
+      "type": "bearer",
+      "location": "header",
+      "token_param_name": "Authorization",
+      "user_inputs": [
+        {
+          "field": "token",
+          "label": "Bearer Token",
+          "type": "password",
+          "required": true,
+          "placeholder": "Enter your bearer token"
+        }
+      ]
+    },
+    {
+      "name": "Basic Auth",
+      "type": "basic",
+      "location": "header",
+      "user_inputs": [
+        {
+          "field": "username",
+          "label": "Username",
+          "type": "text",
+          "required": true,
+          "placeholder": "Enter username"
+        },
+        {
+          "field": "password",
+          "label": "Password",
+          "type": "password",
+          "required": true,
+          "placeholder": "Enter password"
+        }
+      ]
+    },
+    {
+      "name": "OAuth 2.0",
+      "type": "oauth2",
+      "location": "header",
+      "user_inputs": [
+        {
+          "field": "client_id",
+          "label": "Client ID",
+          "type": "text",
+          "required": true,
+          "placeholder": "Enter your OAuth client ID",
+          "help_text": "Get this from your OAuth provider"
+        },
+        {
+          "field": "client_secret",
+          "label": "Client Secret",
+          "type": "password",
+          "required": true,
+          "placeholder": "Enter your OAuth client secret",
+          "help_text": "Keep this secure - never share it"
+        },
+        {
+          "field": "redirect_uri",
+          "label": "Redirect URI",
+          "type": "text",
+          "required": true,
+          "default": "http://localhost:5000/oauth/callback",
+          "placeholder": "http://localhost:5000/oauth/callback",
+          "help_text": "Must match the URI registered with OAuth provider"
+        },
+        {
+          "field": "authorization_endpoint",
+          "label": "Authorization Endpoint",
+          "type": "text",
+          "required": true,
+          "placeholder": "https://provider.com/oauth/authorize",
+          "help_text": "OAuth provider's authorization URL"
+        },
+        {
+          "field": "token_endpoint",
+          "label": "Token Endpoint",
+          "type": "text",
+          "required": true,
+          "placeholder": "https://provider.com/oauth/token",
+          "help_text": "OAuth provider's token exchange URL"
+        },
+        {
+          "field": "scopes",
+          "label": "Scopes",
+          "type": "text",
+          "required": false,
+          "placeholder": "read write",
+          "help_text": "Space-separated list of permissions"
+        },
+        {
+          "field": "resource",
+          "label": "Resource (Optional)",
+          "type": "text",
+          "required": false,
+          "placeholder": "https://api.example.com",
+          "help_text": "Resource identifier for the API (required for some providers like Microsoft/Business Central)"
+        }
+      ],
+      "flow": "oauth_redirect"
+    }
+  ],
+  "flask": {
+    "secret_key": null,
+    "session_lifetime_days": 7,
+    "debug": false
+  },
+  "sql_server": {
+    "server": "localhost",
+    "database": "MCPTokenUsage",
+    "use_windows_auth": true,
+    "username": null,
+    "password": null,
+    "driver": "ODBC Driver 17 for SQL Server"
+  },
+  "proxy": {
+    "port": 5001,
+    "public_url": null
+  }
+}

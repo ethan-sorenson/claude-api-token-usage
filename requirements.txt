@@ -1,0 +1,29 @@
+# Claude API Token Usage Demo - Requirements
+# Python dependencies for the Flask web server
+#
+# Multi-provider support (Anthropic, OpenAI, Google Gemini, Mistral)
+# Anthropic, OpenAI, and Mistral use their Python SDKs.
+
+Flask==3.0.0
+Flask-CORS==4.0.0
+requests==2.31.0
+python-dotenv==1.0.0  # Optional - only needed if using .env file
+
+# Provider SDKs
+anthropic>=0.40.0      # Anthropic SDK (standard + MCP via beta)
+openai>=1.50.0         # OpenAI SDK (chat completions + tool calling)
+mistralai>=1.12.0      # Mistral SDK (MCP via Conversations API)
+
+# MCP transport + auth
+mcp>=1.26.0
+authlib>=1.6.0
+griffe>=2.0.0
+
+# SQL Server migration dependencies
+pyodbc>=4.0.35  # For SQL Server connectivity
+
+# Development dependencies (optional)
+# Uncomment if you want to run in development mode
+# flask-debugtoolbar==0.13.1
+# pytest==7.4.3
+# pytest-flask==1.3.0
