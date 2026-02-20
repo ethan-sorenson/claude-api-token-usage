@@ -1302,3 +1302,58 @@
         .modal-tab.active { color: #3533FF; border-bottom-color: #3533FF; }
         .modal-tab-content { display: none; }
         .modal-tab-content.active { display: block; }
+
+        /* ── SSE Event Log ──────────────────────────────────────────────── */
+        .sse-controls-area { margin-top: 8px; }
+
+        .sse-log-toggle {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 11px; border: 1px solid #D0D0D2; border-radius: 20px;
+            background: #F4F4F4; color: #767676; font-size: 11px; font-weight: 600;
+            cursor: pointer; font-family: inherit; letter-spacing: 0.2px;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .sse-log-toggle:hover { background: #E2E2E4; color: #313131; border-color: #929395; }
+        .sse-log-toggle.active { background: #111; color: #E2E2E4; border-color: #333; }
+
+        .sse-log-panel {
+            background: #0D0D0D; border-radius: 7px; padding: 6px 8px;
+            margin-top: 6px; max-height: 210px; overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 11px; line-height: 1.55;
+            border: 1px solid #222;
+        }
+        .sse-log-panel::-webkit-scrollbar { width: 4px; }
+        .sse-log-panel::-webkit-scrollbar-track { background: transparent; }
+        .sse-log-panel::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+        .sse-row {
+            display: flex; align-items: baseline; gap: 7px;
+            padding: 2px 0; border-bottom: 1px solid #181818;
+        }
+        .sse-row:last-child { border-bottom: none; }
+
+        .sse-time {
+            color: #444; min-width: 46px; flex-shrink: 0;
+            text-align: right; font-size: 10px;
+        }
+        .sse-badge {
+            padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: 700;
+            min-width: 146px; flex-shrink: 0; letter-spacing: 0.1px;
+            background: #1a1a1a; color: #555;  /* default — overridden per-type */
+        }
+        .sse-detail { color: #707070; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+        .sse-ttft   { color: #FFEB55; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+
+        /* Per-type badge colour overrides */
+        .sse-type-message-start        .sse-badge { background: #15154a; color: #7b7bff; }
+        .sse-type-content-block-start  .sse-badge { background: #1a1a1a; color: #505050; }
+        .sse-type-content-block-delta  .sse-badge { background: #0d2a17; color: #4cd97a; }
+        .sse-type-content-block-delta  .sse-detail { color: #4cd97a; }
+        .sse-type-content-block-stop   .sse-badge { background: #1a1a1a; color: #505050; }
+        .sse-type-message-delta        .sse-badge { background: #2b1500; color: #ff8c42; }
+        .sse-type-message-delta        .sse-detail { color: #ff8c42; }
+        .sse-type-stream-end           .sse-badge { background: #15154a; color: #9090ff; font-style: italic; }
+        .sse-type-progress             .sse-badge { background: #1a1a1a; color: #666; }
+        .sse-type-error                .sse-badge { background: #2b0a0a; color: #ff5a26; }
+        .sse-type-error                .sse-detail { color: #ff5a26; }

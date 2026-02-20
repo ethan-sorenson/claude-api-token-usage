@@ -590,6 +590,14 @@
                 addMessageToUI('assistant', contentSegments, 0, [], false, false,
                     result.stop_reason, result.perf, result.tool_chain);
 
+                // Attach the frozen SSE event log chip to the completed message
+                if (result.sseEventLog && result.sseEventLog.length > 0) {
+                    const lastMsgContent = document.querySelector(
+                        '#messages .message-assistant:last-child .message-content'
+                    );
+                    if (lastMsgContent) lastMsgContent.appendChild(buildSseLogChip(result.sseEventLog));
+                }
+
                 // Update conversation history.
                 // Prefer the server's authoritative conversation_history which
                 // has correct role alternation (tool_result in user messages,
@@ -951,6 +959,103 @@
               .replace(/: (-?\d+\.?\d*)/g, ': <span style="color: #FF5A26;">$1</span>');
         }
 
+        // ── SSE Event Log helpers ──────────────────────────────────────────────
+
+        /**
+         * Build the innerHTML string for one row of the SSE event log.
+         * Used both during live streaming (appendEventRow) and when rendering
+         * the frozen chip that persists on the completed assistant message.
+         */
+        function buildEventRowHtml(entry) {
+            const { ms, type, event, isTTFT } = entry;
+            const timeStr = ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
+            let detail = '';
+
+            switch (type) {
+                case 'message_start': {
+                    const id    = (event.message?.id    || '').slice(0, 16);
+                    const model = (event.message?.model || '').replace('claude-', '');
+                    detail = `id: ${id}  model: ${model}`;
+                    break;
+                }
+                case 'content_block_start': {
+                    const cbType = event.content_block?.type || '';
+                    const extra  = cbType === 'tool_use'
+                        ? `  name: ${escapeHtml(event.content_block?.name || '')}`
+                        : '';
+                    detail = `#${event.index}  type: ${cbType}${extra}`;
+                    break;
+                }
+                case 'content_block_delta': {
+                    const delta = event.delta || {};
+                    const raw   = delta.text || delta.thinking || delta.partial_json || '';
+                    const preview = raw.length > 40
+                        ? escapeHtml(raw.slice(0, 40)) + '…'
+                        : escapeHtml(raw);
+                    detail = `#${event.index}  &quot;${preview}&quot;`;
+                    break;
+                }
+                case 'content_block_stop':
+                    detail = `#${event.index}`;
+                    break;
+                case 'message_delta':
+                    detail = `stop: ${event.delta?.stop_reason || '—'}  out: ${event.usage?.output_tokens ?? '?'} tok`;
+                    break;
+                case 'stream_end':
+                    detail = '✓ complete';
+                    break;
+                case 'progress':
+                    detail = escapeHtml(event.text || '');
+                    break;
+                case 'error':
+                    detail = escapeHtml(String(event.error || 'unknown error'));
+                    break;
+                default:
+                    detail = escapeHtml(JSON.stringify(event).slice(0, 60));
+            }
+
+            const ttftMark = isTTFT ? '<span class="sse-ttft">★ TTFT</span>' : '';
+            return `<span class="sse-time">${timeStr}</span><span class="sse-badge">${type}</span><span class="sse-detail">${detail}</span>${ttftMark}`;
+        }
+
+        /**
+         * Build a frozen, collapsible event-log chip to attach to a completed
+         * assistant message after streaming finishes.
+         */
+        function buildSseLogChip(eventLog) {
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = 'margin-top: 8px;';
+
+            const toggle = document.createElement('button');
+            toggle.className = 'sse-log-toggle';
+            toggle.textContent = `📡 ${eventLog.length} events`;
+
+            const panel = document.createElement('div');
+            panel.className = 'sse-log-panel';
+            panel.style.display = 'none';
+
+            eventLog.forEach(entry => {
+                const row = document.createElement('div');
+                row.className = `sse-row sse-type-${entry.type.replace(/_/g, '-')}`;
+                row.innerHTML = buildEventRowHtml(entry);
+                panel.appendChild(row);
+            });
+
+            toggle.onclick = () => {
+                const isOpen = panel.style.display !== 'none';
+                panel.style.display = isOpen ? 'none' : 'block';
+                toggle.textContent = isOpen
+                    ? `📡 ${eventLog.length} events`
+                    : `📡 ${eventLog.length} events ▲`;
+                toggle.classList.toggle('active', !isOpen);
+                if (!isOpen) panel.scrollTop = panel.scrollHeight;
+            };
+
+            wrapper.appendChild(toggle);
+            wrapper.appendChild(panel);
+            return wrapper;
+        }
+
         function renderToolUsage(toolUsage) {
             if (!toolUsage || toolUsage.length === 0) return null;
             
@@ -1096,18 +1201,48 @@
          * Read an SSE response stream from a fetch() call, updating the loading
          * spinner as progress events arrive, and returning the stream_end payload
          * (which mirrors the JSON response structure).
+         *
+         * Also populates finalResult.sseEventLog with every raw SSE event so the
+         * caller can attach a frozen event-log chip to the completed message.
          */
         async function readSSEStream(response, loadingId) {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
             let buffer = '';
             let finalResult = null;
-            const crumbs = []; // accumulates progress steps as breadcrumbs
+            const crumbs   = [];  // progress breadcrumbs shown in the loading bubble
+            const eventLog = [];  // every raw SSE event, for the event-log panel
 
             // Performance tracking
             const streamStartTime = Date.now();
             let firstTokenMs = null;
             let deltaCount = 0;
+            let sseLogVisible = false;
+
+            // ── Initialise the two-zone layout inside the loading bubble ────────
+            // We split the bubble into a crumbs zone (updated by renderCrumbs) and
+            // a controls zone holding the toggle button + scrollable log panel.
+            // This prevents renderCrumbs from overwriting the log panel.
+            (function initPanel() {
+                const el = document.getElementById(loadingId);
+                if (!el) return;
+                el.querySelector('.message-content').innerHTML = `
+                    <div class="sse-crumbs-area"><span class="loading"></span> Thinking...</div>
+                    <div class="sse-controls-area">
+                        <button class="sse-log-toggle" id="${loadingId}-sse-btn">📡 Events</button>
+                        <div class="sse-log-panel" id="${loadingId}-sse-panel" style="display:none;"></div>
+                    </div>`;
+                document.getElementById(`${loadingId}-sse-btn`).onclick = () => {
+                    sseLogVisible = !sseLogVisible;
+                    const panel = document.getElementById(`${loadingId}-sse-panel`);
+                    const btn   = document.getElementById(`${loadingId}-sse-btn`);
+                    if (!panel || !btn) return;
+                    panel.style.display = sseLogVisible ? 'block' : 'none';
+                    btn.classList.toggle('active', sseLogVisible);
+                    btn.textContent = sseLogVisible ? '📡 Events ▲' : '📡 Events';
+                    if (sseLogVisible) panel.scrollTop = panel.scrollHeight;
+                };
+            })();
 
             function addBreadcrumb(text) {
                 // Avoid consecutive duplicates
@@ -1116,10 +1251,12 @@
                 renderCrumbs();
             }
 
+            // Targets .sse-crumbs-area only, so the controls zone is never stomped
             function renderCrumbs() {
                 const el = document.getElementById(loadingId);
                 if (!el) return;
-                const content = el.querySelector('.message-content');
+                const area = el.querySelector('.sse-crumbs-area');
+                if (!area) return;
                 const parts = crumbs.map((text, i) => {
                     const isLast = i === crumbs.length - 1;
                     if (isLast) {
@@ -1127,10 +1264,21 @@
                     }
                     return `<div class="progress-crumb done">${text}</div>`;
                 }).join('');
-                content.innerHTML = `<div class="progress-crumbs">${parts}</div>`;
-                // Keep scroll at bottom as crumbs grow
+                area.innerHTML = `<div class="progress-crumbs">${parts}</div>`;
                 const messagesDiv = document.getElementById('messages');
                 if (messagesDiv) messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }
+
+            // Append one row to the live panel (O(1) per event — no full re-render)
+            function appendEventRow(entry) {
+                const panel = document.getElementById(`${loadingId}-sse-panel`);
+                if (!panel) return;
+                const row = document.createElement('div');
+                row.className = `sse-row sse-type-${entry.type.replace(/_/g, '-')}`;
+                row.innerHTML = buildEventRowHtml(entry);
+                panel.appendChild(row);
+                // Auto-scroll only while the panel is open
+                if (panel.style.display !== 'none') panel.scrollTop = panel.scrollHeight;
             }
 
             try {
@@ -1146,6 +1294,9 @@
                         try { event = JSON.parse(line.slice(6)); }
                         catch { continue; }
 
+                        // Mark the very first delta so buildEventRowHtml can stamp ★ TTFT
+                        const isTTFT = (event.type === 'content_block_delta' && firstTokenMs === null);
+
                         if (event.type === 'content_block_delta') {
                             if (firstTokenMs === null) firstTokenMs = Date.now() - streamStartTime;
                             deltaCount++;
@@ -1159,6 +1310,11 @@
                         } else if (event.type === 'stream_end') {
                             finalResult = event;
                         }
+
+                        // Record and render every event (including stream_end)
+                        const entry = { ms: Date.now() - streamStartTime, type: event.type, event, isTTFT };
+                        eventLog.push(entry);
+                        appendEventRow(entry);
                     }
                 }
             } finally {
@@ -1167,7 +1323,7 @@
 
             if (!finalResult) throw new Error('Stream ended without a result');
 
-            // Attach performance metrics to the result
+            // Attach performance metrics and the frozen event log to the result
             const totalMs = Date.now() - streamStartTime;
             const generationMs = (firstTokenMs !== null) ? (totalMs - firstTokenMs) : 0;
             const tps = (generationMs > 100 && deltaCount > 0)
@@ -1178,6 +1334,7 @@
                 total_ms: totalMs,
                 tps,
             };
+            finalResult.sseEventLog = eventLog;
             return finalResult;
         }
 
