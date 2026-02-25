@@ -1185,7 +1185,7 @@
                 );
 
                 displayComparisonSessions(fullSessions);
-                document.getElementById('loadModal').style.display = 'block';
+                document.getElementById('loadModal').style.display = 'block'; // .modal class uses style.display
             } catch (error) {
                 console.error('Failed to load comparison sessions:', error);
                 showError('Failed to load comparison sessions');
@@ -1195,9 +1195,8 @@
         function displayComparisonSessions(sessions) {
             const sessionList = document.getElementById('sessionList');
 
-            let html = `<input type="text" id="comparisonSearchInput" placeholder="🔍 Search by session ID or note..."
-                style="width: 100%; padding: 12px 16px; border: 2px solid #C7C9CA; border-radius: 8px; font-size: 14px; margin-bottom: 15px; transition: border-color 0.2s;"
-                onfocus="this.style.borderColor='#3533FF'" onblur="this.style.borderColor='#C7C9CA'"
+            let html = `<input type="text" id="comparisonSearchInput" placeholder="Search by session ID or note..."
+                class="config-input" style="width: 100%; margin-bottom: 15px;"
                 oninput="filterComparisonSessions(this.value)">`;
 
             html += sessions.map(session => {
@@ -1368,7 +1367,7 @@
 
         function showError(message, isError = true) {
             const container = document.getElementById('errorContainer');
-            container.innerHTML = `<div class="error-message" style="background: ${isError ? '#FFF0EC' : '#D4FFE2'}; color: ${isError ? '#CC4820' : '#3BB366'}; border-left-color: ${isError ? '#FF5A26' : '#4CD97A'}">${escapeHtml(message)}</div>`;
+            container.innerHTML = `<div class="error-message" style="${isError ? '' : 'background: rgba(34,197,94,0.1); color: var(--accent-green); border-left-color: var(--accent-green);'}">${escapeHtml(message)}</div>`;
             setTimeout(() => { container.innerHTML = ''; }, 3000);
         }
 
@@ -1389,12 +1388,12 @@
             const title   = document.getElementById('historyModalTitle');
 
             const data       = comparisonData[side];
-            const configName = side === 'left' ? '🟢 Configuration A' : '🔵 Configuration B';
+            const configName = side === 'left' ? '[A] Configuration A' : '[B] Configuration B';
             title.textContent = `${configName} - Message History`;
 
             if (!data.messages || data.messages.length === 0) {
-                content.innerHTML = '<p style="text-align: center; color: #929395; padding: 40px;">No messages yet. Send a message to start.</p>';
-                modal.style.display = 'block';
+                content.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 40px;">No messages yet. Send a message to start.</p>';
+                modal.classList.add('visible');
                 return;
             }
 
@@ -1435,11 +1434,11 @@
             });
             html += '</div>';
             content.innerHTML = html;
-            modal.style.display = 'block';
+            modal.classList.add('visible');
         }
 
         function closeMessageHistoryModal() {
-            document.getElementById('messageHistoryModal').style.display = 'none';
+            document.getElementById('messageHistoryModal').classList.remove('visible');
         }
 
         function showMessageDetails(side, messageIndex) {
@@ -1450,7 +1449,7 @@
             const modal   = document.getElementById('messageDetailsModal');
             const content = document.getElementById('messageDetailsContent');
 
-            const configName = side === 'left' ? '🟢 Configuration A' : '🔵 Configuration B';
+            const configName = side === 'left' ? '[A] Configuration A' : '[B] Configuration B';
             const timestamp  = new Date(message.timestamp).toLocaleString();
 
             const usedMcpServers = new Set();
@@ -1546,7 +1545,7 @@
             `;
 
             content.innerHTML = html;
-            modal.style.display = 'block';
+            modal.classList.add('visible');
         }
 
         // ── Initialization ────────────────────────────────────────────

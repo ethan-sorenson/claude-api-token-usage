@@ -455,7 +455,7 @@
             document.getElementById('tokenNotes').value = '';
             document.getElementById('tokenKey').required = true;
             document.getElementById('tokenSystemPrompt').value = '';
-            document.getElementById('tokenModal').style.display = 'block';
+            document.getElementById('tokenModal').classList.add('visible');
             // Delay EasyMDE init so the browser paints the modal before CodeMirror measures it
             setTimeout(() => ensureSystemPromptEditor(() => systemPromptEditor.value('')), 50);
         }
@@ -473,13 +473,13 @@
             document.getElementById('tokenKey').required = false;
             document.getElementById('tokenNotes').value = token.notes || '';
             document.getElementById('tokenSystemPrompt').value = token.system_prompt || '';
-            document.getElementById('tokenModal').style.display = 'block';
+            document.getElementById('tokenModal').classList.add('visible');
             const sp = token.system_prompt || '';
             setTimeout(() => ensureSystemPromptEditor(() => systemPromptEditor.value(sp)), 50);
         }
 
         function closeTokenModal() {
-            document.getElementById('tokenModal').style.display = 'none';
+            document.getElementById('tokenModal').classList.remove('visible');
             document.getElementById('tokenKey').placeholder = 'sk-ant-...';
             document.getElementById('tokenKey').required = true;
         }

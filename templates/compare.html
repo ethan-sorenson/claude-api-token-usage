@@ -7,9 +7,10 @@
     <link rel="icon" type="image/png" sizes="16x16" href="https://login.popdock.com/favicon-16x16.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/compare.css?v=20260224a">
-    <link rel="stylesheet" href="/static/css/nav.css?v=20260219">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/compare.css?v=20260225b">
+    <link rel="stylesheet" href="/static/css/nav.css?v=20260225a">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
 </head>
@@ -18,17 +19,17 @@
     <div class="nav-overlay" id="navOverlay" onclick="toggleNavMenu()"></div>
     <nav class="nav-drawer" id="navDrawer">
         <div class="nav-drawer-header">
-            <span class="app-icon">🤖</span>
+            <span class="app-icon">MC</span>
             <h2>MCP Chat</h2>
         </div>
         <div class="nav-section">
             <div class="nav-section-label">Configuration</div>
             <a class="nav-item" href="/tokens">
-                <span class="nav-icon">🔑</span>
+                <span class="nav-icon">//</span>
                 <span class="nav-label">AI Clients</span>
             </a>
             <a class="nav-item" href="/connections">
-                <span class="nav-icon">🔌</span>
+                <span class="nav-icon">~~</span>
                 <span class="nav-label">Connections</span>
             </a>
         </div>
@@ -36,11 +37,11 @@
         <div class="nav-section">
             <div class="nav-section-label">Chats</div>
             <a class="nav-item" href="/">
-                <span class="nav-icon">💬</span>
+                <span class="nav-icon">&gt;_</span>
                 <span class="nav-label">Single Chat</span>
             </a>
             <a class="nav-item active" href="/compare.html">
-                <span class="nav-icon">🔀</span>
+                <span class="nav-icon">&lt;&gt;</span>
                 <span class="nav-label">Comparison Chat</span>
             </a>
         </div>
@@ -48,20 +49,20 @@
 
     <div class="container">
         <div class="header">
-            <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="header-top-row">
                 <button class="nav-menu-trigger" id="navMenuTrigger" onclick="toggleNavMenu()" title="Menu">
                     <span class="bar"></span>
                     <span class="bar"></span>
                     <span class="bar"></span>
                 </button>
-                <h1 style="margin: 0;">🔀 Comparison Chat</h1>
+                <h1>Comparison Chat</h1>
             </div>
         </div>
 
         <div class="comparison-main">
             <div class="right-sidebar">
                 <div class="sidebar-section">
-                    <div class="sidebar-section-title">📋 Session</div>
+                    <div class="sidebar-section-title">SESSION</div>
                     <div id="currentSessionInfo" class="sidebar-session-info">
                         No active session
                     </div>
@@ -69,13 +70,13 @@
                         <input type="text" id="comparisonNote" class="sidebar-input" placeholder="Session note..." onchange="saveComparisonSession()">
                     </div>
                     <div class="sidebar-session-buttons">
-                        <button class="sidebar-btn" onclick="startNewComparison()" title="New Comparison">➕ New</button>
-                        <button class="sidebar-btn" onclick="showComparisonHistory()" title="Load Session">📁 Load</button>
-                        <button class="sidebar-btn sidebar-btn-danger" onclick="resetComparison()" title="Reset">🔄 Reset</button>
+                        <button class="sidebar-btn" onclick="startNewComparison()" title="New Comparison">+ NEW</button>
+                        <button class="sidebar-btn" onclick="showComparisonHistory()" title="Load Session">LOAD</button>
+                        <button class="sidebar-btn sidebar-btn-danger" onclick="resetComparison()" title="Reset">&#x21BA; RESET</button>
                     </div>
                 </div>
                 <div class="sidebar-section">
-                    <div class="sidebar-section-title">📊 Performance Comparison</div>
+                    <div class="sidebar-section-title">PERFORMANCE</div>
                     <div id="sidebarComparisonMetrics"></div>
                 </div>
             </div>
@@ -83,26 +84,26 @@
             <div class="config-bar" id="configBar">
                 <div class="config-inline">
                     <div class="config-group config-a-accent">
-                        <span class="config-group-label">🟢 A</span>
+                        <span class="config-group-label panel-label-a">[A]</span>
                         <div id="leftClientSelector" class="client-selector"></div>
                         <div class="mcp-selector" id="leftMcpSelector"></div>
                         <button class="history-btn-sm" onclick="showMessageHistory('left')" title="View message history">
-                            📋 <span id="leftMessageCount">0</span>
+                            LOG <span id="leftMessageCount">0</span>
                         </button>
                     </div>
                     <div class="config-group config-b-accent">
-                        <span class="config-group-label">🔵 B</span>
+                        <span class="config-group-label panel-label-b">[B]</span>
                         <div id="rightClientSelector" class="client-selector"></div>
                         <div class="mcp-selector" id="rightMcpSelector"></div>
                         <button class="history-btn-sm" onclick="showMessageHistory('right')" title="View message history">
-                            📋 <span id="rightMessageCount">0</span>
+                            LOG <span id="rightMessageCount">0</span>
                         </button>
                     </div>
                 </div>
             </div>
 
             <div class="side-panel config-a" id="leftPanel">
-                <div class="panel-label">🟢 A <span id="leftPanelName" class="panel-config-name"></span></div>
+                <div class="panel-label"><span class="panel-label-a">[A]</span> <span id="leftPanelName" class="panel-config-name"></span></div>
                 <div class="messages-container" id="leftMessages"></div>
                 <div class="metrics-bar">
                     <div class="metrics-row">
@@ -114,7 +115,7 @@
             </div>
 
             <div class="side-panel config-b" id="rightPanel">
-                <div class="panel-label">🔵 B <span id="rightPanelName" class="panel-config-name"></span></div>
+                <div class="panel-label"><span class="panel-label-b">[B]</span> <span id="rightPanelName" class="panel-config-name"></span></div>
                 <div class="messages-container" id="rightMessages"></div>
                 <div class="metrics-bar">
                     <div class="metrics-row">
@@ -129,15 +130,15 @@
         <div class="input-section">
             <div id="errorContainer"></div>
             <div class="input-controls">
-                <button class="markdown-toggle" onclick="toggleMarkdownPreview()" title="Toggle Markdown Preview">👁️ Preview</button>
+                <button class="markdown-toggle" onclick="toggleMarkdownPreview()" title="Toggle Markdown Preview">PREVIEW</button>
             </div>
-            <div style="display: flex; gap: 10px; align-items: flex-end;">
+            <div class="input-row">
                 <div class="input-wrapper">
-                    <textarea id="userInput" class="config-input" placeholder="Type your message here (Markdown supported)..." onkeydown="handleKeyPress(event)" oninput="updateMarkdownPreview()" style="flex: 1; margin: 0; min-height: 80px; max-height: 400px; resize: vertical;"></textarea>
+                    <textarea id="userInput" class="config-input" placeholder="Type your message here (Markdown supported)..." onkeydown="handleKeyPress(event)" oninput="updateMarkdownPreview()"></textarea>
                     <div id="markdownPreview" class="markdown-preview" style="display: none;"></div>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <button class="btn btn-primary" onclick="sendComparison()" style="padding: 14px 28px; font-size: 15px; font-weight: 600; white-space: nowrap;">Send</button>
+                <div class="input-send-col">
+                    <button class="btn btn-primary" onclick="sendComparison()">Send</button>
                 </div>
             </div>
         </div>
@@ -155,24 +156,24 @@
     </div>
 
     <!-- Message History Modal -->
-    <div id="messageHistoryModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow: auto;">
-        <div style="background: white; margin: 30px auto; max-width: 1000px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 85vh; display: flex; flex-direction: column;">
-            <div style="padding: 20px; border-bottom: 1px solid #E2E2E4; display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin: 0; font-size: 20px;" id="historyModalTitle">Message History</h2>
-                <button onclick="closeMessageHistoryModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #929395;">&times;</button>
+    <div id="messageHistoryModal" class="modal-backdrop">
+        <div class="modal-dialog modal-dialog--lg">
+            <div class="modal-header">
+                <h2 id="historyModalTitle">Message History</h2>
+                <button onclick="closeMessageHistoryModal()" class="modal-close">&times;</button>
             </div>
-            <div style="padding: 20px; overflow-y: auto; flex: 1;"><div id="messageHistoryContent"></div></div>
+            <div class="modal-body"><div id="messageHistoryContent"></div></div>
         </div>
     </div>
 
     <!-- Message Details Modal -->
-    <div id="messageDetailsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1001; overflow: auto;">
-        <div style="background: white; margin: 30px auto; max-width: 900px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 85vh; display: flex; flex-direction: column;">
-            <div style="padding: 20px; border-bottom: 1px solid #E2E2E4; display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin: 0; font-size: 20px;">API Call Details</h2>
-                <button onclick="closeMessageDetailsModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #929395;">&times;</button>
+    <div id="messageDetailsModal" class="modal-backdrop" style="z-index: 1001;">
+        <div class="modal-dialog modal-dialog--md">
+            <div class="modal-header">
+                <h2>API Call Details</h2>
+                <button onclick="closeMessageDetailsModal()" class="modal-close">&times;</button>
             </div>
-            <div style="padding: 20px; overflow-y: auto; flex: 1;"><div id="messageDetailsContent"></div></div>
+            <div class="modal-body"><div id="messageDetailsContent"></div></div>
         </div>
     </div>
 

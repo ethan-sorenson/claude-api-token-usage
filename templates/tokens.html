@@ -7,10 +7,11 @@
     <link rel="icon" type="image/png" sizes="16x16" href="https://login.popdock.com/favicon-16x16.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/main.css">
-    <link rel="stylesheet" href="/static/css/nav.css">
-    <link rel="stylesheet" href="/static/css/connections.css">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/main.css?v=20260225b">
+    <link rel="stylesheet" href="/static/css/nav.css?v=20260225b">
+    <link rel="stylesheet" href="/static/css/connections.css?v=20260225b">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css">
     <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
@@ -25,17 +26,17 @@
     <div class="nav-overlay" id="navOverlay" onclick="toggleNavMenu()"></div>
     <nav class="nav-drawer" id="navDrawer">
         <div class="nav-drawer-header">
-            <span class="app-icon">🤖</span>
+            <span class="app-icon">MC</span>
             <h2>MCP Chat</h2>
         </div>
         <div class="nav-section">
             <div class="nav-section-label">Configuration</div>
             <a class="nav-item active" href="/tokens">
-                <span class="nav-icon">🔑</span>
+                <span class="nav-icon">//</span>
                 <span class="nav-label">AI Clients</span>
             </a>
             <a class="nav-item" href="/connections">
-                <span class="nav-icon">🔌</span>
+                <span class="nav-icon">~~</span>
                 <span class="nav-label">Connections</span>
             </a>
         </div>
@@ -43,11 +44,11 @@
         <div class="nav-section">
             <div class="nav-section-label">Chats</div>
             <a class="nav-item" href="/">
-                <span class="nav-icon">💬</span>
+                <span class="nav-icon">&gt;_</span>
                 <span class="nav-label">Single Chat</span>
             </a>
             <a class="nav-item" href="/compare.html">
-                <span class="nav-icon">🔀</span>
+                <span class="nav-icon">&lt;&gt;</span>
                 <span class="nav-label">Comparison Chat</span>
             </a>
         </div>
@@ -56,13 +57,13 @@
     <div class="container">
         <div class="header">
             <div class="header-left">
-                <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="header-top-row">
                     <button class="nav-menu-trigger" id="navMenuTrigger" onclick="toggleNavMenu()" title="Menu">
                         <span class="bar"></span>
                         <span class="bar"></span>
                         <span class="bar"></span>
                     </button>
-                    <h1 style="margin-bottom: 0;">🔑 AI Clients</h1>
+                    <h1>AI Clients</h1>
                 </div>
                 <p class="page-subtitle">Manage API keys for AI language models. These clients are available for selection in the chat interfaces.</p>
             </div>
@@ -72,7 +73,7 @@
             <div class="toolbar">
                 <div class="toolbar-left">
                     <button class="btn btn-primary" onclick="showAddTokenDialog()">
-                        ➕ Add New Token
+                        + Add New Token
                     </button>
                 </div>
                 <div class="toolbar-right">
@@ -90,7 +91,7 @@
                 </div>
                 <div class="connections-detail-panel" id="tokenDetailPanel">
                     <div class="detail-empty">
-                        <div class="detail-empty-icon">🔑</div>
+                        <div class="detail-empty-icon">//</div>
                         <p>Select a token from the list to view its configuration</p>
                     </div>
                 </div>
@@ -99,23 +100,22 @@
     </div>
 
     <!-- Add/Edit Token Modal -->
-    <div id="tokenModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow: auto;">
-        <div style="background: white; margin: 80px auto; max-width: 550px; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
-            <div style="padding: 20px 24px; border-bottom: 1px solid #E2E2E4; display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin: 0; font-size: 20px;" id="tokenModalTitle">Add New Token</h2>
-                <button onclick="closeTokenModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #929395;">&times;</button>
+    <div id="tokenModal" class="modal-backdrop">
+        <div class="modal-dialog modal-dialog--sm" style="margin-top: 80px;">
+            <div class="modal-header">
+                <h2 id="tokenModalTitle">Add New Token</h2>
+                <button onclick="closeTokenModal()" class="modal-close">&times;</button>
             </div>
-            <div style="padding: 24px;">
+            <div class="modal-body">
                 <form id="tokenForm" onsubmit="saveToken(event)">
                     <input type="hidden" id="tokenEditId" value="">
-                    <div style="margin-bottom: 16px;">
-                        <label class="config-label" style="font-size: 13px; font-weight: 600; color: #767676;">Display Name *</label>
-                        <input type="text" id="tokenName" class="config-input" placeholder="e.g., Anthropic Production, OpenAI Dev" required
-                               style="padding: 10px; font-size: 14px;">
+                    <div class="form-field">
+                        <label class="form-label">Display Name *</label>
+                        <input type="text" id="tokenName" class="config-input" placeholder="e.g., Anthropic Production, OpenAI Dev" required>
                     </div>
-                    <div style="margin-bottom: 16px;">
-                        <label class="config-label" style="font-size: 13px; font-weight: 600; color: #767676;">Provider *</label>
-                        <select id="tokenProvider" class="config-input" required style="padding: 10px; font-size: 14px;">
+                    <div class="form-field">
+                        <label class="form-label">Provider *</label>
+                        <select id="tokenProvider" class="config-input" required>
                             <option value="">Select provider...</option>
                             <option value="anthropic">Anthropic (Claude)</option>
                             <option value="openai">OpenAI (GPT)</option>
@@ -123,27 +123,24 @@
                             <option value="mistral">Mistral</option>
                         </select>
                     </div>
-                    <div style="margin-bottom: 16px;">
-                        <label class="config-label" style="font-size: 13px; font-weight: 600; color: #767676;">API Key *</label>
-                        <input type="password" id="tokenKey" class="config-input" placeholder="sk-ant-..." required
-                               style="padding: 10px; font-size: 14px;">
-                        <div style="font-size: 11px; color: #929395; margin-top: 4px;">Your key is stored securely in the database</div>
+                    <div class="form-field">
+                        <label class="form-label">API Key *</label>
+                        <input type="password" id="tokenKey" class="config-input" placeholder="sk-ant-..." required>
+                        <div class="form-hint">Your key is stored securely in the database</div>
                     </div>
-                    <div style="margin-bottom: 16px;">
-                        <label class="config-label" style="font-size: 13px; font-weight: 600; color: #767676;">Notes</label>
-                        <input type="text" id="tokenNotes" class="config-input" placeholder="Optional notes about this token..."
-                               style="padding: 10px; font-size: 14px;">
+                    <div class="form-field">
+                        <label class="form-label">Notes</label>
+                        <input type="text" id="tokenNotes" class="config-input" placeholder="Optional notes about this token...">
                     </div>
-                    <div style="margin-bottom: 24px;">
-                        <label class="config-label" style="font-size: 13px; font-weight: 600; color: #767676;">System Prompt (Baseline)</label>
+                    <div class="form-field">
+                        <label class="form-label">System Prompt (Baseline)</label>
                         <textarea id="tokenSystemPrompt" class="config-input" rows="4"
-                                  placeholder="Optional instructions sent with every message (e.g. 'You are a helpful ERP assistant. Always respond concisely.')..."
-                                  style="padding: 10px; font-size: 13px; resize: vertical; line-height: 1.5;"></textarea>
-                        <div style="font-size: 11px; color: #929395; margin-top: 4px;">Applied automatically on every request. Supported by Anthropic, OpenAI, Mistral, and Google.</div>
+                                  placeholder="Optional instructions sent with every message..."></textarea>
+                        <div class="form-hint">Applied automatically on every request. Supported by Anthropic, OpenAI, Mistral, and Google.</div>
                     </div>
-                    <div style="display: flex; gap: 12px;">
-                        <button type="button" onclick="closeTokenModal()" class="btn btn-secondary" style="flex: 1; padding: 12px;">Cancel</button>
-                        <button type="submit" class="btn btn-primary" style="flex: 1; padding: 12px;">Save Token</button>
+                    <div class="modal-footer-inline">
+                        <button type="button" onclick="closeTokenModal()" class="btn btn-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Token</button>
                     </div>
                 </form>
             </div>

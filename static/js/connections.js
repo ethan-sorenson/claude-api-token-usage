@@ -1185,11 +1185,11 @@
             }
 
             modalContent.innerHTML = content;
-            modal.style.display = 'block';
+            modal.classList.add('visible');
         }
 
         function closeMcpCapabilitiesModal() {
-            document.getElementById('mcpCapabilitiesModal').style.display = 'none';
+            document.getElementById('mcpCapabilitiesModal').classList.remove('visible');
             const searchInput = document.getElementById('capabilitiesSearch');
             if (searchInput) searchInput.value = '';
         }

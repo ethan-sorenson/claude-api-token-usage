@@ -1,7 +1,7 @@
         console.log('Script is loading...');
 
         // Initialize Mermaid
-        mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'loose' });
+        mermaid.initialize({ startOnLoad: false, theme: 'dark', securityLevel: 'loose' });
         let mermaidIdCounter = 0;
 
         async function renderMermaidBlocks(container) {
@@ -2378,7 +2378,7 @@
             html += `</div>`; // close toolchain tab
 
             content.innerHTML = html;
-            modal.style.display = 'block';
+            modal.classList.add('visible');
         }
 
         // Switch tabs in message details modal
@@ -2399,7 +2399,7 @@
         window.switchDetailTab = switchDetailTab;
 
         function closeMessageDetailsModal() {
-            document.getElementById('messageDetailsModal').style.display = 'none';
+            document.getElementById('messageDetailsModal').classList.remove('visible');
         }
 
         function copyToClipboard(elementId) {
@@ -2656,11 +2656,11 @@
 
             modalContent.innerHTML = content;
             modal.setAttribute('data-current-server-id', serverId);
-            modal.style.display = 'block';
+            modal.classList.add('visible');
         }
 
         function closeMcpCapabilitiesModal() {
-            document.getElementById('mcpCapabilitiesModal').style.display = 'none';
+            document.getElementById('mcpCapabilitiesModal').classList.remove('visible');
             // Clear search on close
             const searchInput = document.getElementById('capabilitiesSearch');
             if (searchInput) {

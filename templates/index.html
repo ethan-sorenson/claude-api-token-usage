@@ -7,9 +7,10 @@
     <link rel="icon" type="image/png" sizes="16x16" href="https://login.popdock.com/favicon-16x16.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/main.css?v=20260220d">
-    <link rel="stylesheet" href="/static/css/nav.css?v=20260219">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/main.css?v=20260225a">
+    <link rel="stylesheet" href="/static/css/nav.css?v=20260225a">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
 </head>
@@ -18,17 +19,17 @@
     <div class="nav-overlay" id="navOverlay" onclick="toggleNavMenu()"></div>
     <nav class="nav-drawer" id="navDrawer">
         <div class="nav-drawer-header">
-            <span class="app-icon">🤖</span>
+            <span class="app-icon">MC</span>
             <h2>MCP Chat</h2>
         </div>
         <div class="nav-section">
             <div class="nav-section-label">Configuration</div>
             <a class="nav-item" href="/tokens">
-                <span class="nav-icon">🔑</span>
+                <span class="nav-icon">//</span>
                 <span class="nav-label">AI Clients</span>
             </a>
             <a class="nav-item" href="/connections">
-                <span class="nav-icon">🔌</span>
+                <span class="nav-icon">~~</span>
                 <span class="nav-label">Connections</span>
             </a>
         </div>
@@ -36,11 +37,11 @@
         <div class="nav-section">
             <div class="nav-section-label">Chats</div>
             <a class="nav-item active" href="/">
-                <span class="nav-icon">💬</span>
+                <span class="nav-icon">&gt;_</span>
                 <span class="nav-label">Single Chat</span>
             </a>
             <a class="nav-item" href="/compare.html">
-                <span class="nav-icon">🔀</span>
+                <span class="nav-icon">&lt;&gt;</span>
                 <span class="nav-label">Comparison Chat</span>
             </a>
         </div>
@@ -49,13 +50,13 @@
     <div class="container">
         <div class="header">
             <div class="header-left">
-                <div style="display: flex; align-items: center; gap: 12px;">
+                <div class="header-top-row">
                     <button class="nav-menu-trigger" id="navMenuTrigger" onclick="toggleNavMenu()" title="Menu">
                         <span class="bar"></span>
                         <span class="bar"></span>
                         <span class="bar"></span>
                     </button>
-                    <h1 style="margin-bottom: 0;">Single Chat</h1>
+                    <h1>Single Chat</h1>
                 </div>
                 <div class="metrics">
                 <div class="metric-card">
@@ -64,7 +65,7 @@
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Context Window</div>
-                    <input type="number" id="contextWindow" value="200000" style="font-size: 20px; font-weight: bold; color: #3533FF; border: none; background: transparent; width: 100%; padding: 0;" onchange="updateContextWindow()" title="Adjust context window size (Sonnet 4: 200,000 | Opus 4: 200,000 | Haiku: 200,000)">
+                    <input type="number" id="contextWindow" class="metric-input" value="200000" onchange="updateContextWindow()" title="Adjust context window size (Sonnet 4: 200,000 | Opus 4: 200,000 | Haiku: 200,000)">
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Usage %</div>
@@ -87,7 +88,7 @@
             <!-- Left Controls Sidebar -->
             <div class="chat-sidebar-left">
                 <div class="sidebar-section">
-                    <div class="sidebar-section-label">🔑 AI Client</div>
+                    <div class="sidebar-section-label">AI CLIENT</div>
                     <select id="apiTokenSelect" class="sidebar-select" onchange="onTokenSelected()">
                         <option value="">Select AI Client...</option>
                     </select>
@@ -98,7 +99,7 @@
                 </div>
 
                 <div class="sidebar-section">
-                    <div class="sidebar-section-label">🔌 MCPs</div>
+                    <div class="sidebar-section-label">MCP SERVERS</div>
                     <select id="mcpServerDropdown" class="sidebar-select" onchange="addMcpFromDropdown(this)">
                         <option value="">Select MCP to add...</option>
                     </select>
@@ -108,9 +109,9 @@
                 </div>
 
                 <div class="sidebar-section">
-                    <div class="sidebar-section-label" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;" onclick="toggleParamPanel()">
-                        <span>⚙ Generation Settings</span>
-                        <span id="paramChevron" style="font-size:10px;transition:transform 0.2s;">▼</span>
+                    <div class="sidebar-section-label sidebar-section-label--toggle" onclick="toggleParamPanel()">
+                        <span>PARAMS</span>
+                        <span id="paramChevron" class="param-chevron">▼</span>
                     </div>
                     <div id="paramPanel" style="display:none;margin-top:4px;">
                         <div class="param-row">
@@ -135,7 +136,7 @@
                 </div>
 
                 <div class="sidebar-section">
-                    <div class="sidebar-section-label">📋 Session</div>
+                    <div class="sidebar-section-label">SESSION</div>
                     <div id="currentSessionInfo" class="sidebar-session-info">
                         No active session
                     </div>
@@ -144,13 +145,13 @@
                                onchange="saveCurrentSession()">
                     </div>
                     <div class="sidebar-session-buttons">
-                        <button class="sidebar-btn" onclick="startNewSession()" title="New Session">➕ New</button>
-                        <button class="sidebar-btn" onclick="showLoadSessionDialog()" title="Load Session">📁 Load</button>
-                        <button class="sidebar-btn sidebar-btn-danger" onclick="resetConversation()" title="Reset">🔄 Reset</button>
+                        <button class="sidebar-btn" onclick="startNewSession()" title="New Session">+ NEW</button>
+                        <button class="sidebar-btn" onclick="showLoadSessionDialog()" title="Load Session">LOAD</button>
+                        <button class="sidebar-btn sidebar-btn-danger" onclick="resetConversation()" title="Reset">&#x21BA; RESET</button>
                     </div>
                 </div>
 
-                <div id="pricingInfo" style="padding: 10px 12px; background: #F4F4F4; border-radius: 6px; font-size: 11px; color: #929395;">
+                <div id="pricingInfo" class="pricing-info">
                     <strong>Pricing (Sonnet 4):</strong><br>
                     Input: $3.00 / 1M tokens<br>
                     Output: $15.00 / 1M tokens
@@ -164,7 +165,7 @@
                     <div id="errorContainer"></div>
                     <div class="input-controls">
                         <button class="markdown-toggle" onclick="toggleMarkdownPreview()" title="Toggle Markdown Preview">
-                            👁️ Preview
+                            PREVIEW
                         </button>
                     </div>
                     <div class="input-group">
@@ -172,7 +173,7 @@
                             <textarea id="userInput" rows="3" placeholder="Type your message here (Markdown supported)..." onkeydown="handleKeyPress(event)" oninput="updateMarkdownPreview()"></textarea>
                             <div id="markdownPreview" class="markdown-preview" style="display: none;"></div>
                         </div>
-                        <div style="display: flex; flex-direction: column; gap: 8px; align-self: flex-end;">
+                        <div class="input-send-col">
                             <button class="btn btn-primary" onclick="sendMessage()">Send</button>
                         </div>
                     </div>
@@ -180,42 +181,38 @@
             </div>
 
             <div class="sidebar">
-                <h3>📊 Message Metrics</h3>
+                <h3>METRICS</h3>
                 <div id="breakdown"></div>
             </div>
         </div>
     </div>
 
     <!-- MCP Capabilities Modal -->
-    <div id="mcpCapabilitiesModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow: auto;">
-        <div style="background: white; margin: 50px auto; max-width: 1200px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 80vh; display: flex; flex-direction: column;">
-            <div style="padding: 20px; border-bottom: 1px solid #E2E2E4;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h2 style="margin: 0; font-size: 20px;" id="modalServerName">MCP Server Capabilities</h2>
-                    <button onclick="closeMcpCapabilitiesModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #929395;">&times;</button>
-                </div>
-                <div style="position: relative;">
-                    <input type="text" id="capabilitiesSearch" placeholder="🔍 Search tools and prompts..." 
-                           oninput="filterCapabilities()"
-                           style="width: 100%; padding: 10px 40px 10px 15px; border: 1px solid #E2E2E4; border-radius: 6px; font-size: 14px; outline: none;">
-                    <button onclick="clearCapabilitiesSearch()" id="clearSearchBtn"
-                            style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #929395; cursor: pointer; font-size: 18px; display: none;">&times;</button>
-                </div>
+    <div id="mcpCapabilitiesModal" class="modal-backdrop">
+        <div class="modal-dialog modal-dialog--lg">
+            <div class="modal-header">
+                <h2 id="modalServerName">MCP Server Capabilities</h2>
+                <button onclick="closeMcpCapabilitiesModal()" class="modal-close">&times;</button>
             </div>
-            <div style="padding: 20px; overflow-y: auto; flex: 1;">
+            <div class="modal-search">
+                <input type="text" id="capabilitiesSearch" placeholder="Search tools and prompts..."
+                       oninput="filterCapabilities()">
+                <button onclick="clearCapabilitiesSearch()" id="clearSearchBtn" class="modal-search-clear" style="display:none;">&times;</button>
+            </div>
+            <div class="modal-body">
                 <div id="modalContent"></div>
             </div>
         </div>
     </div>
 
     <!-- Message Details Modal -->
-    <div id="messageDetailsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; overflow: auto;">
-        <div style="background: white; margin: 30px auto; max-width: 900px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-height: 85vh; display: flex; flex-direction: column;">
-            <div style="padding: 20px; border-bottom: 1px solid #E2E2E4; display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin: 0; font-size: 20px;">API Call Details</h2>
-                <button onclick="closeMessageDetailsModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #929395;">&times;</button>
+    <div id="messageDetailsModal" class="modal-backdrop">
+        <div class="modal-dialog modal-dialog--md">
+            <div class="modal-header">
+                <h2>API Call Details</h2>
+                <button onclick="closeMessageDetailsModal()" class="modal-close">&times;</button>
             </div>
-            <div style="padding: 20px; overflow-y: auto; flex: 1;">
+            <div class="modal-body">
                 <div id="messageDetailsContent"></div>
             </div>
         </div>

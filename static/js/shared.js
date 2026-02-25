@@ -94,7 +94,7 @@ function copyToClipboard(elementId) {
 }
 
 function closeMessageDetailsModal() {
-    document.getElementById('messageDetailsModal').style.display = 'none';
+    document.getElementById('messageDetailsModal').classList.remove('visible');
 }
 
 // ── MCP Prompts ───────────────────────────────────────────────────
