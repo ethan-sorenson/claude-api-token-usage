@@ -162,6 +162,101 @@
             return toolDiv;
         }
 
+        // ── SSE Event Log helpers ─────────────────────────────────────
+
+        /**
+         * Build the innerHTML string for one row of the SSE event log.
+         */
+        function buildEventRowHtml(entry) {
+            const { ms, type, event, isTTFT } = entry;
+            const timeStr = ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`;
+            let detail = '';
+
+            switch (type) {
+                case 'message_start': {
+                    const id    = (event.message?.id    || '').slice(0, 16);
+                    const model = (event.message?.model || '').replace('claude-', '');
+                    detail = `id: ${id}  model: ${model}`;
+                    break;
+                }
+                case 'content_block_start': {
+                    const cbType = event.content_block?.type || '';
+                    const extra  = cbType === 'tool_use'
+                        ? `  name: ${escapeHtml(event.content_block?.name || '')}`
+                        : '';
+                    detail = `#${event.index}  type: ${cbType}${extra}`;
+                    break;
+                }
+                case 'content_block_delta': {
+                    const delta = event.delta || {};
+                    const raw   = delta.text || delta.thinking || delta.partial_json || '';
+                    const preview = raw.length > 40
+                        ? escapeHtml(raw.slice(0, 40)) + '…'
+                        : escapeHtml(raw);
+                    detail = `#${event.index}  &quot;${preview}&quot;`;
+                    break;
+                }
+                case 'content_block_stop':
+                    detail = `#${event.index}`;
+                    break;
+                case 'message_delta':
+                    detail = `stop: ${event.delta?.stop_reason || '—'}  out: ${event.usage?.output_tokens ?? '?'} tok`;
+                    break;
+                case 'stream_end':
+                    detail = '✓ complete';
+                    break;
+                case 'progress':
+                    detail = escapeHtml(event.text || '');
+                    break;
+                case 'error':
+                    detail = escapeHtml(String(event.error || 'unknown error'));
+                    break;
+                default:
+                    detail = escapeHtml(JSON.stringify(event).slice(0, 60));
+            }
+
+            const ttftMark = isTTFT ? '<span class="sse-ttft">★ TTFT</span>' : '';
+            return `<span class="sse-time">${timeStr}</span><span class="sse-badge">${type}</span><span class="sse-detail">${detail}</span>${ttftMark}`;
+        }
+
+        /**
+         * Build a frozen, collapsible event-log chip to attach to a completed
+         * assistant message after streaming finishes.
+         */
+        function buildSseLogChip(eventLog) {
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = 'margin-top: 8px;';
+
+            const toggle = document.createElement('button');
+            toggle.className = 'sse-log-toggle';
+            toggle.textContent = `📡 ${eventLog.length} events`;
+
+            const panel = document.createElement('div');
+            panel.className = 'sse-log-panel';
+            panel.style.display = 'none';
+
+            eventLog.forEach(entry => {
+                const row = document.createElement('div');
+                row.className = `sse-row sse-type-${entry.type.replace(/_/g, '-')}`;
+                row.innerHTML = buildEventRowHtml(entry);
+                panel.appendChild(row);
+            });
+
+            toggle.onclick = () => {
+                const isOpen = panel.style.display !== 'none';
+                panel.style.display = isOpen ? 'none' : 'block';
+                toggle.textContent = isOpen
+                    ? `📡 ${eventLog.length} events`
+                    : `📡 ${eventLog.length} events ▲`;
+                toggle.classList.toggle('active', !isOpen);
+                if (!isOpen) panel.scrollTop = panel.scrollHeight;
+            };
+
+            wrapper.appendChild(toggle);
+            wrapper.appendChild(panel);
+            return wrapper;
+        }
+
         // ── Token & Model Loading ─────────────────────────────────────
 
         async function loadAvailableModels() {
@@ -439,6 +534,146 @@
         }
         window.resetComparison = resetComparison;
 
+        // ── SSE Stream Reader (compare variant) ──────────────────────
+
+        /**
+         * Read an SSE response stream, updating the loading bubble with live
+         * progress crumbs and an optional event-log panel.
+         * Adapted from readSSEStream() in app.js — differences:
+         *   • Takes a `side` param to scroll the correct panel container
+         *   • Cleanup calls removeMessage(side, loadingId) in finally
+         */
+        async function readSSEStreamCompare(response, loadingId, side) {
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            let finalResult = null;
+            const crumbs   = [];
+            const eventLog = [];
+
+            const streamStartTime = Date.now();
+            let firstTokenMs = null;
+            let deltaCount = 0;
+            let sseLogVisible = false;
+            let sseReady = false;
+
+            const messagesContainer = document.getElementById(side === 'left' ? 'leftMessages' : 'rightMessages');
+
+            function addBreadcrumb(text) {
+                if (crumbs.length > 0 && crumbs[crumbs.length - 1] === text) return;
+                crumbs.push(text);
+                renderCrumbs();
+            }
+
+            function renderCrumbs() {
+                const el = document.getElementById(loadingId);
+                if (!el) return;
+                const area = el.querySelector('.sse-crumbs-area') || el.querySelector('.message-content');
+                if (!area) return;
+                const parts = crumbs.map((text, i) => {
+                    const isLast = i === crumbs.length - 1;
+                    if (isLast) {
+                        return `<div class="progress-crumb active"><span class="loading"></span>${text}</div>`;
+                    }
+                    return `<div class="progress-crumb done">${text}</div>`;
+                }).join('');
+                area.innerHTML = `<div class="progress-crumbs">${parts}</div>`;
+                if (messagesContainer) messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+
+            function appendEventRow(entry) {
+                if (!sseReady) return;
+                try {
+                    const panel = document.getElementById(`${loadingId}-sse-panel`);
+                    if (!panel) return;
+                    const row = document.createElement('div');
+                    row.className = `sse-row sse-type-${entry.type.replace(/_/g, '-')}`;
+                    row.innerHTML = buildEventRowHtml(entry);
+                    panel.appendChild(row);
+                    if (panel.style.display !== 'none') panel.scrollTop = panel.scrollHeight;
+                } catch (e) { /* non-fatal */ }
+            }
+
+            try {
+                try {
+                    const el = document.getElementById(loadingId);
+                    if (el) {
+                        el.querySelector('.message-content').innerHTML = `
+                            <div class="sse-crumbs-area"><span class="loading"></span> Thinking...</div>
+                            <div class="sse-controls-area">
+                                <button class="sse-log-toggle" id="${loadingId}-sse-btn">📡 Events</button>
+                                <div class="sse-log-panel" id="${loadingId}-sse-panel" style="display:none;"></div>
+                            </div>`;
+                        const btn = document.getElementById(`${loadingId}-sse-btn`);
+                        if (btn) {
+                            btn.onclick = () => {
+                                sseLogVisible = !sseLogVisible;
+                                const panel = document.getElementById(`${loadingId}-sse-panel`);
+                                const b     = document.getElementById(`${loadingId}-sse-btn`);
+                                if (!panel || !b) return;
+                                panel.style.display = sseLogVisible ? 'block' : 'none';
+                                b.classList.toggle('active', sseLogVisible);
+                                b.textContent = sseLogVisible ? '📡 Events \u25b2' : '📡 Events';
+                                if (sseLogVisible) panel.scrollTop = panel.scrollHeight;
+                            };
+                            sseReady = true;
+                        }
+                    }
+                } catch (e) { console.warn('SSE panel init failed (non-fatal):', e); }
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop();
+                    for (const line of lines) {
+                        if (!line.startsWith('data: ')) continue;
+                        let event;
+                        try { event = JSON.parse(line.slice(6)); }
+                        catch { continue; }
+
+                        const isTTFT = (event.type === 'content_block_delta' && firstTokenMs === null);
+
+                        if (event.type === 'content_block_delta') {
+                            if (firstTokenMs === null) firstTokenMs = Date.now() - streamStartTime;
+                            deltaCount++;
+                        } else if (event.type === 'progress') {
+                            addBreadcrumb(event.text);
+                        } else if (event.type === 'content_block_start' &&
+                                   event.content_block?.type === 'tool_use') {
+                            addBreadcrumb(`Calling ${event.content_block.name}...`);
+                        } else if (event.type === 'error') {
+                            throw new Error(event.error || 'Streaming error');
+                        } else if (event.type === 'stream_end') {
+                            finalResult = event;
+                        }
+
+                        const entry = { ms: Date.now() - streamStartTime, type: event.type, event, isTTFT };
+                        eventLog.push(entry);
+                        appendEventRow(entry);
+                    }
+                }
+            } finally {
+                removeMessage(side, loadingId);
+            }
+
+            if (!finalResult) throw new Error('Stream ended without a result');
+
+            const totalMs = Date.now() - streamStartTime;
+            const generationMs = (firstTokenMs !== null) ? (totalMs - firstTokenMs) : 0;
+            const tps = (generationMs > 100 && deltaCount > 0)
+                ? (deltaCount / generationMs * 1000).toFixed(1)
+                : null;
+            finalResult.perf = {
+                ttft_ms: firstTokenMs,
+                total_ms: totalMs,
+                tps,
+            };
+            finalResult.sseEventLog = eventLog;
+            return finalResult;
+        }
+
         // ── Send Flow ─────────────────────────────────────────────────
 
         async function sendComparison() {
@@ -513,6 +748,7 @@
                     session_id:       sessionId,
                     servers:          config.servers,
                     enabled_servers:  config.enabled_servers,
+                    stream:           true,
                 };
 
                 if (config.token_id) payload.token_id = config.token_id;
@@ -525,17 +761,37 @@
                     body: JSON.stringify(payload)
                 });
 
-                const duration = (Date.now() - startTime) / 1000;
-
                 if (!response.ok) {
                     const error = await response.json();
                     removeMessage(side, loadingId);
-                    addMessage(side, 'assistant', `❌ Error: ${error.error || 'Unknown error'}`);
+                    const errorMsg = error.error || 'Unknown error';
+                    addMessage(side, 'assistant', `❌ Error: ${errorMsg}`);
+                    data.messages.push({
+                        timestamp: new Date().toISOString(),
+                        userMessage,
+                        response: { error: errorMsg, content: [{ type: 'text', text: `❌ Error: ${errorMsg}` }], stop_reason: 'error' },
+                        duration: (Date.now() - startTime) / 1000,
+                        tokens: 0,
+                        cost: 0
+                    });
+                    updateMetrics(side);
+                    await saveComparisonSession();
                     return;
                 }
 
-                const result = await response.json();
-                removeMessage(side, loadingId);
+                // Detect SSE stream vs JSON response
+                const contentType = response.headers.get('content-type') || '';
+                let result;
+                if (contentType.includes('text/event-stream')) {
+                    // readSSEStreamCompare removes the loading message in its finally block
+                    result = await readSSEStreamCompare(response, loadingId, side);
+                } else {
+                    removeMessage(side, loadingId);
+                    result = await response.json();
+                    result.perf = { ttft_ms: null, total_ms: Date.now() - startTime, tps: null };
+                }
+
+                const duration = result.perf?.total_ms ? result.perf.total_ms / 1000 : (Date.now() - startTime) / 1000;
 
                 // Update conversation history from server (preserves tool call role alternation)
                 if (result.conversation_history && result.conversation_history.length > 0) {
@@ -549,7 +805,15 @@
 
                 // Process content blocks into segments (text + tools interleaved, with thinking)
                 const contentSegments = processContentBlocks(result.content || []);
-                addMessage(side, 'assistant', contentSegments);
+                addMessage(side, 'assistant', contentSegments, [],
+                    false, false, result.stop_reason, result.perf, result.tool_chain);
+
+                // Attach SSE event log chip to the completed message
+                if (result.sseEventLog && result.sseEventLog.length > 0) {
+                    const panel = document.getElementById(side === 'left' ? 'leftMessages' : 'rightMessages');
+                    const lastContent = panel?.querySelector('.message-assistant:last-child .message-content');
+                    if (lastContent) lastContent.appendChild(buildSseLogChip(result.sseEventLog));
+                }
 
                 // Dynamic cost calculation using per-side model pricing
                 const inputTokens  = result.usage?.input_tokens  || 0;
@@ -574,7 +838,18 @@
 
             } catch (error) {
                 removeMessage(side, loadingId);
-                addMessage(side, 'assistant', `❌ Error: ${error.message}`);
+                const errorMsg = error.message;
+                addMessage(side, 'assistant', `❌ Error: ${errorMsg}`);
+                data.messages.push({
+                    timestamp: new Date().toISOString(),
+                    userMessage,
+                    response: { error: errorMsg, content: [{ type: 'text', text: `❌ Error: ${errorMsg}` }], stop_reason: 'error' },
+                    duration: (Date.now() - startTime) / 1000,
+                    tokens: 0,
+                    cost: 0
+                });
+                updateMetrics(side);
+                await saveComparisonSession();
                 console.error(`Error sending to ${side}:`, error);
             }
         }
@@ -612,7 +887,9 @@
 
         // ── Message Rendering ─────────────────────────────────────────
 
-        function addMessage(side, role, content, toolUsage = []) {
+        function addMessage(side, role, content, toolUsage = [],
+                wasTruncated = false, wasPaused = false,
+                stopReason = null, perfMetrics = null, toolChain = null) {
             const container = document.getElementById(side === 'left' ? 'leftMessages' : 'rightMessages');
             const messageDiv = document.createElement('div');
             const messageId  = `${side}-msg-${Date.now()}-${Math.random()}`;
@@ -626,10 +903,25 @@
                 // Segment-based format (new)
                 content.forEach((segment, index) => {
                     if (segment.thinking && segment.thinking.trim()) {
-                        const thinkingDiv = document.createElement('div');
-                        thinkingDiv.style.cssText = 'background: #E8F9FF; border-left: 3px solid #33B6FF; padding: 12px; margin: 10px 0; border-radius: 4px; font-size: 13px; color: #3533FF;';
-                        thinkingDiv.innerHTML = `<div style="font-weight: 600; margin-bottom: 6px;">🤔 Thinking</div><div style="opacity: 0.9; white-space: pre-wrap;">${escapeHtml(segment.thinking)}</div>`;
-                        contentDiv.appendChild(thinkingDiv);
+                        const thinkingBlock = document.createElement('div');
+                        thinkingBlock.className = 'thinking-block';
+
+                        const thinkingHeader = document.createElement('div');
+                        thinkingHeader.className = 'thinking-header';
+                        thinkingHeader.innerHTML = `<span style="font-size: 15px;">&#129300;</span> Thinking<span class="thinking-chevron">&#9660;</span>`;
+
+                        const thinkingContent = document.createElement('div');
+                        thinkingContent.className = 'thinking-content';
+                        thinkingContent.textContent = segment.thinking;
+
+                        thinkingHeader.addEventListener('click', () => {
+                            thinkingBlock.classList.toggle('expanded');
+                            thinkingContent.classList.toggle('expanded');
+                        });
+
+                        thinkingBlock.appendChild(thinkingHeader);
+                        thinkingBlock.appendChild(thinkingContent);
+                        contentDiv.appendChild(thinkingBlock);
                     }
 
                     if (segment.content && segment.content.trim()) {
@@ -663,6 +955,57 @@
             } else {
                 // Loading spinner or raw HTML (e.g. from old saved sessions)
                 contentDiv.innerHTML = content;
+            }
+
+            // Truncation warning
+            if (wasTruncated) {
+                const truncatedWarning = document.createElement('div');
+                truncatedWarning.style.cssText = 'background: #FFF8D6; border-left: 3px solid #FFEB55; padding: 10px; margin-top: 10px; border-radius: 4px; font-size: 13px; color: #CC4820;';
+                truncatedWarning.innerHTML = `&#9888; <strong>Response Truncated</strong><br><span style="font-size: 12px;">The model reached the maximum token limit before completing its response.</span>`;
+                contentDiv.appendChild(truncatedWarning);
+            }
+
+            // Pause indicator
+            if (wasPaused) {
+                const pausedInfo = document.createElement('div');
+                pausedInfo.style.cssText = 'background: #D4F4FF; border-left: 3px solid #33B6FF; padding: 10px; margin-top: 10px; border-radius: 4px; font-size: 13px; color: #3533FF;';
+                pausedInfo.innerHTML = `&#9209; <strong>Conversation Paused</strong><br><span style="font-size: 12px;">Claude paused to wait for tool execution results.</span>`;
+                contentDiv.appendChild(pausedInfo);
+            }
+
+            // Stop reason badge
+            if (role === 'assistant' && stopReason) {
+                const STOP_LABELS = {
+                    'end_turn':       '✓ Complete',
+                    'max_tokens':     '⚠ Max Tokens',
+                    'stop_sequence':  '◼ Stop Seq',
+                    'tool_use':       '⚙ Tool Use',
+                    'content_filter': '⛔ Filtered',
+                };
+                const badge = document.createElement('span');
+                badge.className = `stop-badge stop-badge-${stopReason}`;
+                badge.textContent = STOP_LABELS[stopReason] || stopReason;
+                contentDiv.appendChild(badge);
+            }
+
+            // Performance strip
+            if (role === 'assistant' && perfMetrics) {
+                const strip = document.createElement('div');
+                strip.className = 'perf-strip';
+                const parts = [];
+                if (perfMetrics.ttft_ms !== null && perfMetrics.ttft_ms !== undefined) {
+                    parts.push(`TTFT <span class="perf-val">${(perfMetrics.ttft_ms / 1000).toFixed(2)}s</span>`);
+                }
+                if (perfMetrics.tps !== null && perfMetrics.tps !== undefined) {
+                    parts.push(`<span class="perf-val">${perfMetrics.tps}</span> tok/s`);
+                }
+                if (perfMetrics.total_ms) {
+                    parts.push(`Total <span class="perf-val">${(perfMetrics.total_ms / 1000).toFixed(2)}s</span>`);
+                }
+                if (parts.length > 0) {
+                    strip.innerHTML = parts.join('<span style="color:#E2E2E4">  |  </span>');
+                    contentDiv.appendChild(strip);
+                }
             }
 
             messageDiv.appendChild(contentDiv);

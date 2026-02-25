@@ -790,6 +790,12 @@ class MistralProvider(BaseProvider):
             if choices:
                 delta = choices[0].get('delta', {})
                 chunk = delta.get('content', '')
+                # Newer Mistral models may return content as a list of typed parts
+                if isinstance(chunk, list):
+                    chunk = ''.join(
+                        part.get('text', '') if isinstance(part, dict) else str(part)
+                        for part in chunk
+                    )
                 if chunk:
                     yield json.dumps({
                         'type': 'content_block_delta',

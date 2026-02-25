@@ -1069,3 +1069,169 @@
             font-weight: 600;
             color: #000000;
         }
+
+        /* ── Thinking blocks ────────────────────────────────────────── */
+        .thinking-block {
+            margin: 10px 0;
+            background: #E8F9FF;
+            border-radius: 8px;
+            border: 1px solid #B0E8FF;
+            overflow: hidden;
+        }
+
+        .thinking-header {
+            font-weight: 600;
+            font-size: 13px;
+            color: #3533FF;
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            background: #E8F9FF;
+            transition: background 0.2s;
+            user-select: none;
+        }
+
+        .thinking-header:hover {
+            background: #C8EFFF;
+        }
+
+        .thinking-header .thinking-chevron {
+            margin-left: auto;
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+
+        .thinking-content {
+            padding: 0 15px 12px 15px;
+            display: none;
+            font-size: 13px;
+            color: #3533FF;
+            opacity: 0.9;
+            white-space: pre-wrap;
+            border-top: 1px solid #B0E8FF;
+        }
+
+        .thinking-content.expanded {
+            display: block;
+        }
+
+        .thinking-block.expanded .thinking-chevron {
+            transform: rotate(180deg);
+        }
+
+        /* ── Progress crumbs (shown during SSE streaming) ───────────── */
+        .progress-crumbs {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .progress-crumb {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+
+        .progress-crumb.done {
+            color: #9999aa;
+            font-size: 12px;
+        }
+
+        .progress-crumb.done::before {
+            content: '✓';
+            font-size: 10px;
+            color: #b0b0c0;
+            flex-shrink: 0;
+        }
+
+        .progress-crumb.active {
+            color: #313131;
+            font-weight: 500;
+        }
+
+        /* ── Performance strip ──────────────────────────────────────── */
+        .perf-strip {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 8px;
+            padding: 5px 10px;
+            background: #F4F4F4;
+            border-radius: 6px;
+            font-size: 11px;
+            color: #929395;
+            font-family: 'Courier New', monospace;
+        }
+        .perf-strip .perf-val { font-weight: 700; color: #3533FF; }
+
+        /* ── Stop reason badge ──────────────────────────────────────── */
+        .stop-badge {
+            display: inline-block;
+            font-size: 11px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            margin-top: 6px;
+            font-weight: 600;
+        }
+        .stop-badge-end_turn      { background: #D4FFE2; color: #3BB366; }
+        .stop-badge-max_tokens    { background: #FFF8D6; color: #CC4820; }
+        .stop-badge-stop_sequence { background: #E8F9FF; color: #3533FF; }
+        .stop-badge-tool_use      { background: #F0EEFF; color: #7B5EFF; }
+        .stop-badge-content_filter{ background: #FFF0EC; color: #FF5A26; }
+
+        /* ── SSE Event Log ──────────────────────────────────────────── */
+        .sse-controls-area { margin-top: 8px; }
+
+        .sse-log-toggle {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 11px; border: 1px solid #D0D0D2; border-radius: 20px;
+            background: #F4F4F4; color: #767676; font-size: 11px; font-weight: 600;
+            cursor: pointer; font-family: inherit; letter-spacing: 0.2px;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .sse-log-toggle:hover { background: #E2E2E4; color: #313131; border-color: #929395; }
+        .sse-log-toggle.active { background: #111; color: #E2E2E4; border-color: #333; }
+
+        .sse-log-panel {
+            background: #0D0D0D; border-radius: 7px; padding: 6px 8px;
+            margin-top: 6px; max-height: 210px; overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            font-size: 11px; line-height: 1.55;
+            border: 1px solid #222;
+        }
+        .sse-log-panel::-webkit-scrollbar { width: 4px; }
+        .sse-log-panel::-webkit-scrollbar-track { background: transparent; }
+        .sse-log-panel::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+        .sse-row {
+            display: flex; align-items: baseline; gap: 7px;
+            padding: 2px 0; border-bottom: 1px solid #181818;
+        }
+        .sse-row:last-child { border-bottom: none; }
+
+        .sse-time {
+            color: #444; min-width: 46px; flex-shrink: 0;
+            text-align: right; font-size: 10px;
+        }
+        .sse-badge {
+            padding: 1px 5px; border-radius: 3px; font-size: 10px; font-weight: 700;
+            min-width: 146px; flex-shrink: 0; letter-spacing: 0.1px;
+            background: #1a1a1a; color: #555;
+        }
+        .sse-detail { color: #707070; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+        .sse-ttft   { color: #FFEB55; font-size: 10px; font-weight: 700; flex-shrink: 0; }
+
+        .sse-type-message-start        .sse-badge { background: #15154a; color: #7b7bff; }
+        .sse-type-content-block-start  .sse-badge { background: #1a1a1a; color: #505050; }
+        .sse-type-content-block-delta  .sse-badge { background: #0d2a17; color: #4cd97a; }
+        .sse-type-content-block-delta  .sse-detail { color: #4cd97a; }
+        .sse-type-content-block-stop   .sse-badge { background: #1a1a1a; color: #505050; }
+        .sse-type-message-delta        .sse-badge { background: #2b1500; color: #ff8c42; }
+        .sse-type-message-delta        .sse-detail { color: #ff8c42; }
+        .sse-type-stream-end           .sse-badge { background: #15154a; color: #9090ff; font-style: italic; }
+        .sse-type-progress             .sse-badge { background: #1a1a1a; color: #666; }
+        .sse-type-error                .sse-badge { background: #2b0a0a; color: #ff5a26; }
+        .sse-type-error                .sse-detail { color: #ff5a26; }
